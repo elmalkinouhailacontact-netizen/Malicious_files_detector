@@ -1,6 +1,7 @@
 from pathlib import Path
 import hashlib
 import requests
+import filetype
 
 #Analyse statique
 
@@ -66,6 +67,7 @@ def check_hash(api_key):
 # test check hash
 # check_hash("3ccb40f0ecb8ea129aa97b89c33cd690294baaf87dae2b13021184a76b6eca0c")
 
+
 #Double extension check
 danger_extensions = {".exe", ".bat", ".cmd", ".scr", ".vbs", ".js", ".ps1", ".msi"}
 camouflage_extensions = {".pdf", ".docx", ".xlsx", ".txt", ".jpg", ".png", ".mp4", ".zip"}
@@ -75,16 +77,37 @@ def double_extension():
 
     if len(suffixes) >= 2:
         extension_reel = suffixes[-1]
-        secondary_extension = suffixes[len(suffixes)-1]
-            
+        secondary_extension = suffixes[-2]
 
+    if extension_reel in danger_extensions and secondary_extension in camouflage_extensions:
+        return True
+    
+    return False
 
-double_extension()
+#Reads the magic bytes to detect the real file extension
+def magic_bytes():
+    kind = filetype.guess(file_path)
+    if kind is None:
+        return "UKNOWN"
+    return kind.extension
+    
 
-#Analyse heuristique
-# def heuristic_analysis():
-#     risk_score = 0
-#     reasons = []
+# Analyse heuristique
+def heuristic_analysis():
+    risk_score = 0
+    reasons = []
 
-#     return risk_score, reasons
+    #Double Extension chechk
+    if double_extension:
+        risk_score += 40
+        reasons.append(f'Double extensiondetected: {file_info['name']}')
+
+    #Small suspicious executable program
+    if file_info['extension'].lower() in danger_extensions and file_info['size'] < 10_000:
+        risk_score += 20
+        reasons.append(f'Tiny executable file {file_info['size']} bytes')
+
+    
+    return risk_score, reasons
+
 
